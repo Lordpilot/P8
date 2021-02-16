@@ -1,0 +1,29 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1613468726883.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "1184F2E0",
+    "lastKnownWriteTime" : 902295937953562624,
+    "last_content_update" : 1613468726883,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "cacheKey" : "49B79CF1",
+        "caption" : "Orthodont",
+        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=Orthodont&cache_key=49B79CF1",
+        "displayedObservations" : 108,
+        "environment" : "",
+        "object" : "Orthodont",
+        "preview" : 0,
+        "totalObservations" : 108,
+        "variables" : 4
+    },
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_dataframe"
+}
