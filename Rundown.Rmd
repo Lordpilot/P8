@@ -7,6 +7,184 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(parallel)
+library(latex2exp)
+library(HestonEMcpp)
+library(ggplot2)
+```
+
+```{r}
+setwd("D:/R/MatOk/P8/")
+source("Functions.R")
+```
+
+```{r}
+true_par <- c(0.02,-0.5, .75, .25, .4, .25);true_par
+init <- c(true_par, 1,1)
+
+res1000 <- MC.analy(init, 1000, 1000)
+res10000 <- MC.analy(init, 1000, 10000)
+plot(seq(0,1, length = 1001),res1000$Y[[1]][,1], type = "l", ylim = c(-1,5),
+     main = latex2exp::TeX("100 simulations of S_t"),
+     xlab = "t",
+     ylab = latex2exp::TeX("S_t")
+     )
+for(i in 1:100){
+    lines(seq(0,1, length = 1001),res1000$Y[[i]][,1], col = randomcoloR::randomColor(hue = "random"))
+}
+``` 
+
+Plot of MC estimates
+```{r}
+my_plot <- function(x){
+    n <- length(x$vals)
+    tex <- latex2exp::TeX("10000 values of (S_T-K)^+")
+    plot(x$vals, xlab = "", ylab = latex2exp::TeX("(S_T-K)^+"),
+         main = c(tex),
+         ylim=c(0,1.5))
+    lines(seq(1:n), rep(x$mu,n), col = "red")
+    lines(seq(1:n), rep(x$conf[1],n), col = "blue")
+    lines(seq(1:n), rep(x$conf[2],n), col = "blue")
+    legend("topleft", 
+           legend = c("Mean", "Conf95"),
+           col = c("red","blue"),
+           lty = c(1,1),
+           cex = 0.7)
+}
+
+#par(mfrow=c(2,1))
+my_plot(res1000)
+my_plot(res10000)
+
+
+```
+
+```{r}
+Y.euler.sim <- function(B, n=1000, t=0, Tt=1, y0=c(1,.3),
+                        r=0, alpha=.5, lambda=.5, sigmaV=.4, rho=-.7){
+#Simulation of stock price and volatility based on the Heston Model
+    #Preliminary stuff
+    deltaN <- (Tt-t)/n
+    tmesh <- seq(t,Tt, deltaN)
+    mesh_dist <- diff(tmesh)
+    
+    #Get matching Brownian motion subset for euler simulation
+    mm <- dim(B)[1]-1
+    inc <- mm/n
+    index <- seq(0,mm,inc)
+    B_tmp <- B[index+1,]
+    B_inc <- diff(B_tmp)
+    
+    #Initialize an empty Y
+    Y <- matrix(0,nrow = n, ncol = length(y0))
+    Y <- rbind(y0,Y)
+    
+    #Simulate Y recursively
+    for (i in 2:(n+1)){
+        Y[i,] <- Y[i-1,] + 
+            c(r, alpha - (lambda)*Y[i-1,2])*mesh_dist[i-1] + 
+            ( matrix(
+                c(
+                    Y[i-1,1]*sqrt(1-rho^2),Y[i-1,1]*rho,
+                    0,sigmaV
+                  )
+                ,2,2,T)*sqrt(abs(Y[i-1,1])) ) %*% B_inc[i-1,]
+    }
+    return(Y)
+}
+```
+
+```{r}
+B <- cbind(B.motion(),B.motion())
+microbenchmark::microbenchmark(B <- cbind(B.motion(10000),B.motion(10000)))
+microbenchmark::microbenchmark(testr <- Y.euler.sim(B, 10000, 
+                                                    0, 1, c(1,.3),
+                                                    0, .5, .5, .4, -.7)
+                               )
+microbenchmark::microbenchmark(testcpp <- Y_euler_sim_cpp(B, 10000, 
+                                                          0, 1, c(1,.3),
+                                                          0, .5, .5, .4, -.7)
+                               )
+```
+
+```{r}
+#Assign cores to a cluster we use total_cores-1.
+ncores <- detectCores()-1
+cl <- makeCluster(ncores)
+#Import functions needed in the computations
+clusterExport(cl,c("B.motion","OPrice.MC","F.mc", "nth","unif.ctrl"))
+#Set a different seed on each member of the cluster (we don't want the same estimates).
+clusterEvalQ(cl,library(HestonEMcpp));clusterEvalQ(cl,library(tidyverse))
+clusterSetRNGStream(cl)
+```
+
+```{r}
+add.DATA <- function(n = 10000){
+    setwd("D:/R/MatOk/P8/DATAlocation/")
+    load("DATA")
+    
+    old_DATA <- updated_DATA
+    DATA <- updated_DATA
+    
+    grid <- rnd.grid(n)
+    DATA_OPrice <- parApply(cl, grid, 1, OPrice.MC) %>% unlist %>% as.numeric
+    new_DATA <- cbind(grid, DATA_OPrice)
+    
+    updated_DATA <- rbind(DATA, new_DATA)
+    save(updated_DATA, file = "DATA")
+    save(old_DATA, file = "DATA_old")
+}
+add.DATA(650000)
+beepr::beep(8)
 ```
 
 
+
+
+
+
+
+This is a step by step rundown of neural network training for model calibration. We want for the neural network to approximate the pricing map.
+
+Algorithm 1:
+1. Choose the hyperparameters for the neural network.
+
+2. Initialize weight and bias.
+
+3. Feed the network with Heston model parameters.
+
+4. Let information propogate.
+
+5. Get output.
+
+6. Calculate loss.
+
+7. Backpropogate.
+
+8. Repeat 3-7 until convergence.
+
+
+
+Model Calibration:
+
+Model parameter calibration, or simply model calibration, is the act of estimating model parameters from e.g. market quota. 
+We find the notation and methodology used by Horvath and Hernandez for model calibration with NNs intuitive and will thus use a combination of their style as our baseline.\\
+They start by defining the model $\mathcal{M}(\theta)$, e.g. the Heston model, where $\theta\in\Theta\subseteq R^n$ is the parameter vector and $\Theta$ the parameter space. Next we define a pricing map, $P(\mathcal{M}(\theta),\zeta)$, i.e. expectation of payoff under the risk-neutral measure. Here the $\zeta$ denotes the financial derivative to be priced for a set of maturities and strike prices. Finally we define the \textit{observed price}, $P^{MKT}(\zeta)$. 
+Now the following presents the parameter calibration,
+$$\hat{\theta}=\underset{\theta\in\Theta}{\arg\min}\:\delta(P(\mathcal{M}(\theta),\zeta),P^{MKT}(\zeta)),$$
+This expression reads; the predicted model parameters, $\hat{\theta}$, is equal to the parameters, $\theta$, that minimizes the metric, $\delta(\cdot,\cdot)$.
+
+The pricing map $P$ rarely has an analytic solution, and thus require it to be approximated instead, we define the approximated pricing map as $\widetilde{P}$.
+%However, we do not adopt this notation as this paper does not consider any closed form solutions of the pricing map.
+
+With that said, the evaluation of the pricing map $P$ boils down to a monte carlo approximation of an expectation which is quite doable but quite time consuming if model \textit{on-line} calibraiton speed is crucial. The idea is to train an NN to become a deterministic approximator, $F$, of the pricing map.
+
+As stated in the problem summary, this project will be a simulation study, i.e. $P^{MKT}(\zeta)$ will be simulated from the Heston model with static parameters, $\theta_{\text{true}}$. It is thus proper to define $P^{\mathcal{M}(\Theta)}(\zeta)$.\\
+It is very important to note that calibrating with this simulated data imply a frequentistic perspective on the markets by directly assuming that the Heston model is the \textit{true} model to model asset and volatility dynamics.
+
+With that said, Horvath and Bayer suggests a two step approach for the model calibration procedure, that is
+\begin{itemize}
+    \item \textbf{Learn:} $\widetilde{F}(\Theta,\zeta) = \widetilde{P}(M(\Theta),\zeta)$
+    \item \texbf{Calibrate:}$ \hat{\theta}=\underset{\theta\in\Theta}{\arg\min}\:\delta(\widetilde{F}(\theta,\zeta),P^{SIM}(\mathcal{M}(\theta),\zeta))$
+\end{itemize}

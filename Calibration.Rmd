@@ -1,0 +1,192 @@
+---
+title: "Calibration"
+author: "Jens"
+date: "2021 M05 12"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tensorflow)
+library(keras)
+library(tidyverse)
+library(HestonEMcpp)
+library(parallel)
+library(plotly)
+library(reshape)
+```
+
+```{r}
+setwd("D:/R/MatOk/P8/")
+source("Functions.R")
+```
+
+Ready cores
+```{r}
+#Assign cores to a cluster we use total_cores-1.
+#ncores <- detectCores()-4
+#cl <- makeCluster(ncores)
+#Import functions needed in the computations
+#clusterExport(cl,c("call_heston_cf","chfun_heston", "IV", "vol.surf","BS.OPrice"))
+#clusterEvalQ(cl,library(HestonEMcpp));clusterEvalQ(cl,library(dplyr))
+#Set a different seed on each member of the cluster (we don't want the same estimates).
+#clusterSetRNGStream(cl)
+```
+
+```{r}
+init <- c(0.0,-0.6, .9, .03, .5, .01)
+KT <- cbind(seq(.8,2.5, length.out = 30)[rep(1:30,each = 41)],
+            rep(seq(0.2,.5,length.out = 41),30))
+init_mat <- matrix(rep(init,dim(KT)[1]),dim(KT)[1], byrow = TRUE)
+grid <- cbind(init_mat,KT)
+
+my_surf_values <- apply( grid, 1, vol.surf)
+Obs_Surface <- cbind(grid[,7:8],my_surf_values)
+```
+
+```{r}
+init <- c(0.02,-0.5, .75, .25, .4, .25)
+KT <- cbind(seq(.8,1.2, length.out = 17)[rep(1:17,each = 19)],
+            rep(seq(0.2,2,length.out = 19),17))
+init_mat <- matrix(rep(init,dim(KT)[1]),dim(KT)[1], byrow = TRUE)
+grid <- cbind(init_mat,KT)
+
+my_surf_values <- apply( grid, 1, vol.surf)
+Obs_Surface <- cbind(grid[,7:8],my_surf_values)
+#save(Obs_Surface,file="Surf_17_x_19_TRUE5")
+#setwd("D:/R/MatOk/P8/Volatility/DATA/new")
+load("Surf_17_x_19_TRUE")
+```
+
+Load neural network
+```{r}
+setwd("D:/R/MatOk/P8/NNtraining/DATA/new")
+#load_model_tf("D:/R/MatOk/P8/NNtraining/DATA/t2")
+NN_IV <- load_model_tf("NNtrue1m")
+```
+
+Predict surface
+```{r}
+pred <- NN_IV %>% 
+    predict_on_batch(grid);pred
+
+plot(Obs_Surface[,3], type = "l")
+points(pred, col = "red")
+```
+
+
+Calibration
+```{r}
+#list(r = 0.01,rho = -0.1, alpha = 1,lambda = .5,sigma_V = 1, V0 = .3)
+#Object Function
+obj.fun.NN <- function(par=c(-0.1, 
+                             1, .5,
+                             1, .3),
+                       surface = Obs_Surface){
+    
+    tmp <- c(0.2,par)
+    init <- cbind(matrix(tmp %>% unlist, dim(surface)[1],6, byrow = TRUE), surface[,1:2])
+    pred <- NN_IV %>%
+                predict(init)
+    res_sum <- (surface[,3] - pred) %>% sum
+    res <- res_sum^2/dim(surface)[1]
+    return(res)
+}
+
+obj.fun.MC <- function(par=c(-0.1, 
+                             1, .5,
+                             1, .3),
+                       Obs_Surface){
+    surface <- Obs_Surface
+    tmp <- c(0.2,par,.3)
+    init <- cbind(matrix(tmp %>% unlist, dim(surface)[1],6, byrow = TRUE), surface[,1:2])
+    pred <- NN_IV %>%
+                predict(init)
+    res_sum <- (surface[,3] - pred) %>% sum
+    res <- res_sum^2/dim(surface)[1]
+    return(res)
+}
+```
+
+```{r}
+#Assign cores to a cluster we use total_cores-1.
+ncores <- detectCores()-9
+cl <- makeCluster(ncores)
+#Import functions needed in the computations
+clusterExport(cl,c("B.motion","OPrice.MC","F.mc", "nth","unif.ctrl", "IV", "vol.surf", "BS.OPrice", "obj.fun.NN", "NN_IV", "Obs_Surface","ctr.fun"))
+clusterEvalQ(cl,library(HestonEMcpp));clusterEvalQ(cl,library(tidyverse))
+#Set a different seed on each member of the cluster (we don't want the same estimates).
+clusterSetRNGStream(cl)
+```
+
+
+```{r}
+#Calibraiton with NN
+par_mat <- rnd.grid(1000, r=c(0.02,0.02))[,-c(1,7,8)]
+ctr.fun <- function(par, object_function = obj.fun.NN, surf = Obs_Surface){
+    tmp <- optim(par, lower =c(-.9,.51,0,.01,0.05), upper =c(0,1.5,.5,.8,.5), object_function, gr = NULL, surf, method = "L-BFGS-B", control = list("trace"))
+    #pred <- NN_IV %>%
+    #            predict(matrix(tmp,1))
+    #summ <- (Obs_Surface[,3] - pres) %>% sum
+    #mse <- summ^2/dim(surf)[1]
+    return(list(tmp$par,tmp$value))
+}
+
+#res <- parApply(cl, par_mat, 1, ctr.fun);res
+res <- apply(par_mat, 1, ctr.fun);res
+#save(res, file = "DATA_calibrated_1000")
+
+get.best <- function(x){ 
+    tmp <- x %>% sapply(unlist)
+    nr <- which.min(tmp[6,]) %>% as.integer()
+    res <- c(tmp[,nr],nr)
+    names(res) <- c("rho","alpha","lambda","sigmaV","V0","MSE","nr")
+    return(res)
+}
+
+res2 <- get.best(res);res2
+true_par <- c(0.02,-0.5, .75, .25, .4, .25);true_par
+```
+
+
+```{r}
+plot.parvals <- function(x, par = "V0", true_par = 0.25){
+    best <- get.best(x)
+    tmp <- x %>% sapply("[")
+    tmp2 <- tmp[1,]
+    tmp3 <- tmp2 %>% sapply("[")
+    vals <- tmp3[par,]
+    par(mfrow=c(2,1))
+    #LaT_Dist <- latex2exp::TeX(test)
+    plot(vals, main= par)
+    points(best[8],best[par], pch = 3, col = "blue")
+    lines(seq(1,length(vals)),rep(true_par,length(vals)), lty = 2, col = "red")
+    hist(vals, main = par)
+}
+plot.parvals(res, "r", .02)
+plot.parvals(res, "rho", -.5)
+plot.parvals(res, "alpha", .75)
+plot.parvals(res, "lambda", .25)
+plot.parvals(res, "sigmaV", .4)
+plot.parvals(res, "V0", .25)
+```
+
+
+
+
+
+Calibration MC
+```{r}
+grid
+MC_surf <- 
+```
+
+
+grid
+```{r}
+
+vol.surf <- function(init, n=1000, M=1000){
+    price <- OPrice.MC()
+}
+```
+

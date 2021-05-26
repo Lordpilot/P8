@@ -1,0 +1,105 @@
+---
+title: "NN_Training"
+author: "Jens"
+date: "2021 M05 11"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(keras)
+library(tensorflow)
+```
+
+```{r}
+getwd()
+setwd("D:/R/MatOk/P8/NNtraining/DATA/new")
+load("DATA_TRUE_Par_OPrice_IV_1mil")
+dat <- DATA_par_OPrice_IV #MC Data
+```
+
+Train and test data split.
+```{r}
+set.seed(1)
+index <- sample(2,
+               nrow(dat),
+               replace = TRUE,
+               prob = c(0.9,0.1))
+train_par <- dat[index == 1, 1:8]
+test_par <- dat[index == 2, 1:8]
+```
+```{r}
+train_target <- dat[index == 1, 10]
+test_target <- dat[index == 2, 10]
+```
+
+
+
+```{r}
+NN_IV <- keras_model_sequential()
+
+NN_IV %>% 
+    layer_dense(name = "DeepLayer1",
+                units = 30,
+                activation = "relu",
+                input_shape = c(8)) %>%
+    layer_dense(name = "DeepLayer2",
+                units = 30,
+                activation = "relu") %>%
+    layer_dense(name = "DeepLayer3",
+                units = 30,
+                activation = "relu") %>%
+    layer_dense(name = "DeepLayer4",
+                units = 30,
+                activation = "relu") %>%
+    layer_dense(name = "OutputLayer",
+                units = 1,
+                activation = "linear")
+summary(NN_IV)
+```
+
+```{r}
+NN_IV %>% compile(loss = "mse",
+                  optimizer = "adam",
+                  metrics = c("mean_absolute_error"))
+earlyStop <- callback_early_stopping(monitor = "val_loss", patience = 30)
+```
+
+```{r}
+history1 <- NN_IV %>% fit(train_par,
+                         train_target,
+                         epoch=500,
+                         batch_size = 32,
+                         validation_data=list(test_par,test_target),
+                         verbose = 2,
+                         callbacks = earlyStop)
+
+history2 <- NN_IV2 %>% fit(train_par,
+                         train_target,
+                         epoch=100,
+                         batch_size = 32,
+                         validation_split = .1,
+                         verbose = 2)
+```
+
+```{r}
+NN_IV %>% evaluate(test_par, 
+                   test_target)
+
+```
+
+Prediction
+```{r}
+init <- test_par %>% matrix(1,8)
+tar <- test_target
+
+pred <- NN_IV %>% 
+    predict_on_batch(init);pred
+plot(tar[1:100])
+points(pred, col = "red")
+```
+
+```{r}
+BO_DATA <- list(test_par, test_target)
+```
+

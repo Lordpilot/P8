@@ -1,0 +1,45 @@
+---
+title: "NN_Training"
+author: "Jens"
+date: "2021 M05 11"
+output: html_document
+---
+    
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(parallel)
+```
+
+```{r}
+setwd("D:/R/MatOk/P8/")
+source("Functions.R")
+```
+
+```{r}
+setwd("D:/R/MatOk/P8/Volatility/DATA/New/True Data")
+load("DATA_true_OPrice")
+my_data <- rbind(DATA_OPrice_true)
+```
+
+```{r}
+#Assign cores to a cluster we use total_cores-1.
+ncores <- detectCores()-4
+cl <- makeCluster(ncores)
+#Import functions needed in the computations
+clusterExport(cl,c("CalcVol","BS.OPrice","IV"))
+#Set a different seed on each member of the cluster (we don't want the same estimates).
+clusterSetRNGStream(cl)
+```
+
+```{r}
+bad_index <- c(83806,185780,226588)
+IVs <- parApply(cl, my_data[1:1000000,], MARGIN = 1, CalcVol)
+DATA_par_OPrice_IV <- cbind(my_data[,], IVs)
+colnames(DATA_par_OPrice_IV) <- c("r","rho","alpha","lambda","sigmaV","V0","K","Tt","OPrice","IV")
+```
+
+```{r}
+save(DATA_par_OPrice_IV, file = "DATA_TRUE_Par_OPrice_IV_1_8_1mil")
+```
+
