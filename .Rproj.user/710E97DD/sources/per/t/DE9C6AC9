@@ -1,0 +1,23 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1621335636377.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "2755655028",
+    "id" : "DE9C6AC9",
+    "lastKnownWriteTime" : 1622031361,
+    "last_content_update" : 1622031361971,
+    "path" : "D:/R/MatOk/P8/NNTraining/NN_training.Rmd",
+    "project_path" : "NNTraining/NN_training.Rmd",
+    "properties" : {
+        "cursorPosition" : "10,19",
+        "scrollLine" : "2",
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 4,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

@@ -1,0 +1,23 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1620984211617.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "35|6|44|0|\n98|36|107|0|\n",
+    "hash" : "3468131296",
+    "id" : "CF6F4F09",
+    "lastKnownWriteTime" : 1622025260,
+    "last_content_update" : 1622025260766,
+    "path" : "D:/R/MatOk/P8/Calibration.Rmd",
+    "project_path" : "Calibration.Rmd",
+    "properties" : {
+        "cursorPosition" : "171,0",
+        "scrollLine" : "0",
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

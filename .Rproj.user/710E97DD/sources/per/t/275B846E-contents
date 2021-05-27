@@ -1,0 +1,38 @@
+---
+title: "Rundown"
+author: "FIN Grp 2"
+date: "2021 M02 14"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(parallel)
+library(HestonEMcpp)
+```
+
+```{r}
+setwd("D:/R/MatOk/P8/")
+source("Functions.R")
+```
+
+```{r}
+#Assign cores to a cluster we use total_cores-4.
+ncores <- detectCores()-4
+cl <- makeCluster(ncores)
+#Import functions needed in the computations
+clusterExport(cl,c("chfun_heston","call_heston_cf"))
+#Set a different seed on each member of the cluster (we don't want the same estimates).
+clusterSetRNGStream(cl)
+```
+
+```{r}
+n <- 1000000
+grid <- rnd.grid(n)
+DATA_OPrice <- parApply(cl, grid, 1, call_heston_cf) %>% unlist %>% as.numeric
+DATA_OPrice_true <- cbind(grid,DATA_OPrice)
+save(DATA_OPrice_true, file = "DATA_true_OPrice")
+```
+
+

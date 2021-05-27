@@ -1,0 +1,23 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1621795648296.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "1765926784",
+    "id" : "30904833",
+    "lastKnownWriteTime" : 1621796020,
+    "last_content_update" : 1621796020962,
+    "path" : "D:/R/MatOk/P8/tilBoPlots.R",
+    "project_path" : "tilBoPlots.R",
+    "properties" : {
+        "cursorPosition" : "17,0",
+        "scrollLine" : "0",
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 7,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

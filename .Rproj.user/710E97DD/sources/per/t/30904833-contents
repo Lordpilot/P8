@@ -1,0 +1,22 @@
+#Først indlæs DATA_calibrated_1000 filen.
+
+plot.parvals <- function(x, par = "V0", true_par = 0.25){
+    best <- get.best(x)
+    tmp <- x %>% sapply("[")
+    tmp2 <- tmp[1,]
+    tmp3 <- tmp2 %>% sapply("[")
+    vals <- tmp3[par,]
+    plot(vals, main= par, ylab ="Range", xlab = "Permutation Number")
+    points(best[8],best[par], pch = 3, col = "blue")
+    lines(seq(1,length(vals)),rep(true_par,length(vals)), lty = 2, col = "red")
+}
+
+#Kør så funtionerne nedenunder. Hvis du ønsker at lave noget om på graferne,
+# så bare tilføj det til funktionen ovenover
+
+plot.parvals(res, "r", .02)
+plot.parvals(res, "rho", -.5)
+plot.parvals(res, "alpha", .75)
+plot.parvals(res, "lambda", .25)
+plot.parvals(res, "sigmaV", .4)
+plot.parvals(res, "V0", .25)

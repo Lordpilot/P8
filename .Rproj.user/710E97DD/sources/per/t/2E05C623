@@ -1,19 +1,19 @@
 {
     "collab_server" : "",
     "contents" : "",
-    "created" : 1613390320965.000,
+    "created" : 1620983000676.000,
     "dirty" : false,
     "encoding" : "UTF-8",
-    "folds" : "",
-    "hash" : "611673870",
-    "id" : "EA7C72FC",
-    "lastKnownWriteTime" : 1613376752,
-    "last_content_update" : 1613376752,
+    "folds" : "65|6|98|0|\n",
+    "hash" : "1836156812",
+    "id" : "2E05C623",
+    "lastKnownWriteTime" : 1622063157,
+    "last_content_update" : 1622063157864,
     "path" : "D:/R/MatOk/P8/Rundown.Rmd",
     "project_path" : "Rundown.Rmd",
     "properties" : {
-        "cursorPosition" : "11,0",
-        "scrollLine" : "0"
+        "cursorPosition" : "60,0",
+        "scrollLine" : "48"
     },
     "relative_order" : 1,
     "source_on_save" : false,

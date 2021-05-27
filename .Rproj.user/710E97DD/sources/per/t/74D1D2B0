@@ -1,0 +1,23 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1621322574103.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3633811343",
+    "id" : "74D1D2B0",
+    "lastKnownWriteTime" : 1622030869,
+    "last_content_update" : 1622030869906,
+    "path" : "D:/R/MatOk/P8/Volatility/CalcVol.Rmd",
+    "project_path" : "Volatility/CalcVol.Rmd",
+    "properties" : {
+        "cursorPosition" : "43,0",
+        "scrollLine" : "0",
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 3,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}
